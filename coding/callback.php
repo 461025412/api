@@ -9,6 +9,11 @@ $params=array(
         );
 $url="http://api.schoolhand.top/getAccessToken?".http_build_query($params);
 $res=getUrl($url);
+// $url="https://coding.net/api/current_user?access_token={$res}";
+// $res=$this->getUrl($url);
+ echo $res;
+print_r(json_decode($res,true));
+
 
 
 function postUrl($url,$post_data){

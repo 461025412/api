@@ -32,10 +32,10 @@ function  depart_add(){
     "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
     "redirect_url"=>"http://api.schoolhand.top/callback.php",
     );
-    $data['name']="xzjxzj";
-    $data['summary']="11";
+    $data['name']="xzjssss";
     $url="http://api.schoolhand.top/depart/add?".http_build_query($params);
     $res=postUrl($url,$data);
+    echo $res;
     print_r(json_decode($res));
 }
 function depart_search(){
@@ -43,14 +43,14 @@ function depart_search(){
     "app_key" => "23362d60-7a34-11e6-8a11-6d01c08e998f",
     "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
     "redirect_url"=>"http://api.schoolhand.top/callback.php",
-    "did"       =>"57e1096008857d3d479f1c95"
+    "did"       =>"57e7cd5dc7b55c2f7aa0aed0"
     );
 
 
     $url="http://api.schoolhand.top/depart/get?".http_build_query($params);
     $res=getUrl($url);
     $json_data=json_decode($res,true);
-    // echo $res;
+     echo $res;
     print_r($json_data); 
 }
 function depart_update(){
@@ -60,8 +60,8 @@ function depart_update(){
         "redirect_url"=>"http://api.schoolhand.top/callback.php"
         );
     
-    $data["did"]="57e1096008857d3d479f1c95";
-    $data["name"]="11122222";
+    $data["did"]="57e7cd5dc7b55c2f7aa0aed0";
+    $data["name"]="11111";
     $url="http://api.schoolhand.top/depart/update?".http_build_query($params);
     $res=postUrl($url,$data);
     $json_data=json_decode($res,true);
@@ -75,7 +75,7 @@ function depart_delete(){
         "redirect_url"=>"http://api.schoolhand.top/callback.php"
         );
     
-    $data["did"]="57e1096008857d3d479f1c95";
+    $data["did"]="57e7cd5dc7b55c2f7aa0aed0";
     $url="http://api.schoolhand.top/depart/delete?".http_build_query($params);
     $res=postUrl($url,$data);
     $json_data=json_decode($res,true);
@@ -88,7 +88,7 @@ function search_depart_member(){
         "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
         "redirect_url"=>"http://api.schoolhand.top/callback.php"
         );
-    $data["did"]="57e109718141d41f3954622a";
+    $data["did"]="57e4ed09f3fa1b0e58acbb5";
     $url="http://api.schoolhand.top/search/depart/member?".http_build_query($params);
     $res=postUrl($url,$data);
     $json_data=json_decode($res,true);
@@ -113,7 +113,7 @@ function delete_depart_member(){
         "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
         "redirect_url"=>"http://api.schoolhand.top/callback.php"
         );
-        $data["did"]="57e109718141d41f3954622a";
+        $data["did"]="57e7cd7906f4ef245826725c";
         $data["uid"]="57d7ad8b493cd88cbf7df360";
         $url="http://api.schoolhand.top/delete/depart/member?".http_build_query($params);
         $res=postUrl($url,$data);
@@ -127,9 +127,9 @@ function change_depart_member(){
         "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
         "redirect_url"=>"http://api.schoolhand.top/callback.php"
         );
-        $data["src_did"]="57dfb5231e03d89a02cc4ffe";
-        $data["email"]="2961502706@qq.com";
-        $data["dst_did"]="57e0d71c1c815f156b705000";
+        $data["src_did"]="57e7cd5dc7b55c2f7aa0aed0";
+        $data["email"]="3481957583@qq.com";
+        $data["dst_did"]="57e7cd7906f4ef245826725c";
         $url="http://api.schoolhand.top/change/depart/member?".http_build_query($params);
         $res=postUrl($url,$data);
         $json_data=json_decode($res,true);
@@ -143,8 +143,8 @@ function add_depart_member(){
         "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
         "redirect_url"=>"http://api.schoolhand.top/callback.php"
         );
-        $data["did"]="57e109718141d41f3954622a";
-        $data["email"]="2961502706@qq.com";
+        $data["did"]="57e7cd5dc7b55c2f7aa0aed0,57e7cd7906f4ef245826725c";
+        $data["email"]="3481957583@qq.com";
         $url="http://api.schoolhand.top/add/depart/member?".http_build_query($params);
         $res=postUrl($url,$data);
         $json_data=json_decode($res,true);
@@ -159,7 +159,7 @@ function user_search(){
         "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
         "redirect_url"=>"http://api.schoolhand.top/callback.php"
         );
-     $data["depart"]="57e109718141d41f3954622a";
+     $data["depart"]="57e7cd7906f4ef245826725c";
      $data["uid"]="57d7ad8b493cd88cbf7df360";
      $url="http://api.schoolhand.top/user/get?".http_build_query($params);
      $res=postUrl($url,$data);
@@ -197,6 +197,23 @@ function user_delete(){
         echo $res;
         print_r($json_data);
 }
+function user_add(){
+    $params=array(
+        "app_key" => "23362d60-7a34-11e6-8a11-6d01c08e998f",
+        "app_secret" => "2fc39627-935d-4d65-ab19-4f5021cbeff7",
+        "redirect_url"=>"http://api.schoolhand.top/callback.php"
+    );
+    $data["did"]="57e7cd7906f4ef245826725c,57e7da78d374335e58f0c888";
+//    $data["did"]="57e795edede3808c3fb4c125";
+    $data["email"]="3481957583@qq.com";
+    $url="http://api.schoolhand.top/user/add?".http_build_query($params);
+    $res=postUrl($url,$data);
+    $json_data=json_decode($res,true);
+    echo $res;
+    print_r($json_data);
+
+}
+//user_add();
 // depart_add();
 //57e109718141d41f3954622a
 // depart_search();
@@ -206,8 +223,8 @@ function user_delete(){
 // delete_depart_member();
 // change_depart_member();
 // add_depart_member();
-// user_search();
-// user_delete();
+ user_search();
+// user_add();
 
 
 

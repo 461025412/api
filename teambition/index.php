@@ -28,13 +28,38 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 	switch ($url) {
 		//用户添加
 	case '/getAccessToken':
+        //判断数据是否存在
+        if(!dataIsTrue($getData['code'])){
+            header("HTTP/1.0 404 error");
+            $returnArr['code']=-1;
+            $returnArr['message']="params error";
+            echo json_encode($returnArr);
+            die;
+        }
 		$obj=new teambition($app_key,$app_secret,$redirect_url);
 	 	 echo $obj->getAccessToken($app_key,$getData['code']);
 	 	 break;
 	case '/user/add':
-		$obj=new teambition($app_key,$app_secret);
-		return $obj->user_add();
-		break;
+        //判断数据是否存在
+        if(!dataIsTrue($postData['did'])){
+            header("HTTP/1.0 404 error");
+            $returnArr['code']=-1;
+            $returnArr['message']="params error";
+            echo json_encode($returnArr);
+            die;
+        }
+        //判断数据是否存在
+        if(!dataIsTrue($postData['email'])){
+            header("HTTP/1.0 404 error");
+            $returnArr['code']=-1;
+            $returnArr['message']="params error";
+            echo json_encode($returnArr);
+            die;
+        }
+		$obj=new teambition($app_key,$app_secret,$redirect_url);
+        $res=$obj->depart_member_add($postData['did'],$postData['email']);
+		echo $res;
+        break;
 		//搜索用户
 	case '/user/get':
 		//对访问类型判断
@@ -154,17 +179,9 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
             echo json_encode($returnArr);
             die;
 		}
-		//判断数据是否存在
-		if(!dataIsTrue($postData['summary'])){
-			header("HTTP/1.0 404 error");
-            $returnArr['code']=-1;
-            $returnArr['message']="params error";
-            echo json_encode($returnArr);
-            die;
 
-		}
 		$obj=new teambition($app_key,$app_secret,$redirect_url);
-		$res=$obj->depart_add($postData['name'],$postData['summary']);
+		$res=$obj->depart_add($postData['name']);
 		echo $res;
 		break;
 		//查找部门

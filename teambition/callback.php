@@ -10,6 +10,7 @@ $params=array(
 $url="http://api.schoolhand.top/getAccessToken?".http_build_query($params);
 $res=getUrl($url);
 echo $res;
+print_r(json_decode($res));
 function postUrl($url,$post_data){
         $timeout = 5000;
         $ch = curl_init();

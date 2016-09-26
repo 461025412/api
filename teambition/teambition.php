@@ -33,22 +33,67 @@ class teambition{
     }
     //通过Authorization Code获取Access Token并将token存到memcache中
     public function getAccessToken($app_key,$code){
-            $mem = new Memcache;
-            $mem->connect("localhost", 11211);
-            $url="https://account.teambition.com/oauth2/access_token";
             $param['client_id']=$this->app_id;
             $param['client_secret']=$this->app_key;
             $param['code']=$code;
+            $url="https://account.teambition.com/oauth2/access_token";
             $access_token=$this->postUrl($url,$param);
-            $token=json_decode($access_token)->access_token;
-            $mem->set($app_key,$token);
+            $token=json_decode($access_token,true)['access_token'];
+            $key="teambition".$this->app_id;
+            $res=$this->addToMysql($key,$token);
+            return json_encode($res);
         
+    }
+    //添加到数据库中
+    public function addToMysql($app_key,$refresh_token){
+
+        $db_connect=mysql_connect('127.0.0.1', 'root', 'xzj36199477');
+        mysql_select_db("api",$db_connect);
+        $sql="select * from api where app_key='".$app_key."'";
+        $res=mysql_query($sql);
+        $data=mysql_fetch_assoc($res);
+        if(!empty($data['id'])){
+            $res=mysql_fetch_array($res);
+            $sql="update api set refresh_token='".$refresh_token."' where app_key='{$app_key}' ";
+            $result=mysql_query($sql);
+            if($result){
+                $arr=array();
+                $arr['code']="0";
+                $arr['message']="更新token操作成功";
+                return $arr;
+            }
+
+        }else{
+            $sql="insert into api(app_key,refresh_token) values('".$app_key."','".$refresh_token."')";
+            $result=mysql_query($sql);
+            if($result){
+                $arr=array();
+                $arr['code']="0";
+                $arr['message']="添加token操作成功";
+                return $arr;
+            }
+        }
+
+    }
+    //从数据库中取出一条数据
+    public function getFromMysql(){
+        $db_connect=mysql_connect('127.0.0.1', 'root', 'xzj36199477');
+        mysql_select_db("api",$db_connect);
+        $key="teambition".$this->app_id;
+        $sql="select * from api where app_key='".$key."'";
+        $res=mysql_query($sql);
+        $data=mysql_fetch_assoc($res);
+        if(!empty($data['id'])){
+            return $data;
+        }else{
+            return '';
+        }
     }
     //自己写的获取token的方法 
     public function getToken(){
-        $mem = new Memcache;
-        $mem->connect("localhost", 11211);
-        $token=$mem->get($this->app_id);
+        $key='teambition'.$this->app_id;
+        $tokenData=$this->getFromMysql();
+        $token=$tokenData['refresh_token'];
         $arr=array();
         //如果已有token则返回
         if(!isset($token)||empty($token)){
@@ -64,14 +109,14 @@ class teambition{
         }
     }
    
-    //增加用户
-    public function user_add($username,$password,$email,$first_name,$last_name,$mobile,$office,$telephone,$title,$depart){
+    //增加用户与添加部门成员一样
+    public function user_add($did,$email){
 
     }
     //查找用户
     public function user_search($did,$uid){
         //获取token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -83,28 +128,28 @@ class teambition{
         $params = array(
             'access_token' => $accessToken
         );
-        $url="https://api.teambition.com/api/teams/{$did}/members?".http_build_query($params);
-        $res=$this->getUrl($url);
-        $json_data=json_decode($res,true);
-        //判断授权是否过期
-        $flag=$this->isValid($json_data['name']);
-        if(!$flag){
-            header("HTTP/1.0 404 error");
-            $returnArr['code']=-2;
-            $returnArr['message']="InvalidAccessToken";
-            $returnArr['url']=$tokenArr['url'];
-            return json_encode($returnArr);
+        $userData=array();
+        $dids=explode(",",$did);
+        $i=0;
+        foreach($dids as $key=>$val){
+            $url="https://api.teambition.com/api/teams/{$val}/members?".http_build_query($params);
+            $res=$this->getUrl($url);
+            $userArr=json_decode($res,true);
+            foreach($userArr as $k=>$v){
+                if($v['_id']==$uid){
+                    $userData['user'][$i]=$v;
+                }
+            }
+            $i++;
         }
-        if(!empty($json_data[0]['_id'])){
-            foreach($json_data as $k=>$v){
-            if($v['_id']==$uid){
-                header("HTTP/1.0 200 ok");
-                $returnArr['code']=0;
-                $returnArr['message']="搜索成功";
-                $returnArr['user']=$v;
-                return json_encode($returnArr);
-             }
-          }
+
+
+        if(!empty($userData['user'][0]['_id'])){
+            header("HTTP/1.0 200 ok");
+            $returnArr['code']=o;
+            $returnArr['message']="搜索成功";
+            $returnArr['user']=$userData;
+            return json_encode($returnArr);
         }
         header("HTTP/1.0 404 error");
         $returnArr['code']=-1;
@@ -120,7 +165,7 @@ class teambition{
         }
         $member_id=$userInfo['user']['_memberId'];
         //获取token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -150,9 +195,9 @@ class teambition{
         return true;
     }
     //增加部门 名字可以重复。。
-     public function depart_add($name,$summary=""){
+     public function depart_add($name){
         //获得token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -192,13 +237,22 @@ class teambition{
              header("HTTP/1.0 400 error");
             $returnArr['code']=-1;
             $returnArr['message']="添加部门失败";
-            $returnArr['did']="";
+            $returnArr['res']=$json_arr;
         }
         return json_encode($returnArr);
 
      }
      //创建组织
      public function addOrigination($accessToken){
+         //获取token值
+         $tokenArr=$this->getToken();
+         if($tokenArr['code']==1){
+             header("HTTP/1.0 404 error");
+             $returnArr['code']=-2;
+             $returnArr['message']="InvalidCookie";
+             $returnArr['url']=$tokenArr['url'];
+             return json_encode($returnArr);
+         }
         $url="https://api.teambition.com/organizations?access_token=".$accessToken;
         $param['name']="您的企业";
         $param['description']="洋葱为您创建的默认企业";
@@ -234,7 +288,7 @@ class teambition{
      //默认取第一个企业id返回
     public function getOrganizations(){
         //获取token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -277,7 +331,7 @@ class teambition{
     //查找部门
      public function depart_search($did){
         //获取token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         //判断token是否过期
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
@@ -291,37 +345,45 @@ class teambition{
             'access_token' => $accessToken,
         );
         //请求
-        $url="https://api.teambition.com/api/teams/{$did}?".http_build_query($params);
-        $res=$this->getUrl($url);
-        $json_data=json_decode($res,true);
-        //判断授权是否过期
-        $flag=$this->isValid($json_data['name']);
-        if(!$flag){
-            header("HTTP/1.0 404 error");
-            $returnArr['code']=-2;
-            $returnArr['message']="InvalidAccessToken";
-            $returnArr['url']=$tokenArr['url'];
-            return json_encode($returnArr);
-        }
+         $resData=array();
+         $dids=explode(",",$did);
+         foreach($dids as $k=>$v){
+             $url="https://api.teambition.com/api/teams/{$v}?".http_build_query($params);
+             $resData[]=json_decode($this->getUrl($url),true);
+             //判断授权是否过期
+             $flag=$this->isValid($resData[0]['name']);
+             if(!$flag){
+                 header("HTTP/1.0 404 error");
+                 $returnArr['code']=-2;
+                 $returnArr['message']="InvalidAccessToken";
+                 $returnArr['url']=$tokenArr['url'];
+                 return json_encode($returnArr);
+             }
+         }
+         $arr=array();
+         $i=0;
+         foreach($resData as $k=>$v){
+             $arr[$i]['name']=$v['name'];
+             $arr[$i]['did']=$v['_id'];
+             $i++;
+         }
         //判断是否成功
-        if(!empty($json_data['_id'])){
+        if(!empty($resData[0]['_id'])){
             header("HTTP/1.0 200 ok");
             $returnArr['code']=0;
             $returnArr['message']="查找成功";
-            $arr['name']=$json_data['name'];
-            $arr['did']=$json_data['_id'];
             $returnArr['depart']=$arr;
         }else{
-            header("HTTP/1.0 404 error");
+            header("HTTP/1.0 404 ok");
             $returnArr['code']=-1;
-            $returnArr['message']=$res;
+            $returnArr['message']="查找数据为空";
         }
         return json_encode($returnArr);
      }
     //修改部门
      public function depart_update($did,$name=""){
         //获取token值
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -365,7 +427,7 @@ class teambition{
     //删除部门
     public function depart_del($did){
         //获取token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         //判断token是否过期
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
@@ -380,7 +442,7 @@ class teambition{
         );
          //发送请求
         $url="https://api.teambition.com/api/teams/".$did."?".http_build_query($params);
-        $res=$this->callInterfaceCommon($url,"DELETE",$param);  
+        $res=$this->callInterfaceCommon($url,"DELETE");
         $json_data=json_decode($res);
         //判断授权是否过期
         $flag=$this->isValid($json_data->name);
@@ -399,14 +461,14 @@ class teambition{
         }else{
             header("HTTP/1.0 404 error");
             $returnArr['code']=-1;
-            $returnArr['message']=$res;
+            $returnArr['message']=$json_data;
         }
 
         return json_encode($returnArr);
     }
     //增加部门成员 
     public function depart_member_add($did,$email){
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -418,25 +480,36 @@ class teambition{
         $params = array(
             'access_token' => $accessToken
         );
-        $url="https://api.teambition.com/api/v2/teams/{$did}/members?".http_build_query($params);
-        $param['email']=$email;
-        $param['_id']=$did; 
-        $res=$this->postUrl($url,$param);
-        $json_data=json_decode($res);
-        //判断授权是否过期
-        $flag=$this->isValid($json_data->name);
-        if(!$flag){
-            header("HTTP/1.0 404 error");
-            $returnArr['code']=-2;
-            $returnArr['message']="InvalidAccessToken";
-            $returnArr['url']=$tokenArr['url'];
-            return json_encode($returnArr);
+        $dids=explode(",",$did);
+        $i=0;
+        $user_data=array();
+        foreach($dids as $k=>$v) {
+            $url = "https://api.teambition.com/api/v2/teams/{$v}/members?" . http_build_query($params);
+            $param['email'] = $email;
+            $param['_id'] = $v;
+            $res = $this->postUrl($url, $param);
+            $json_res = json_decode($res, true);
+            $user_data[$i] = $json_res[0];
+            if ($i == 0) {
+                $json_data=json_decode($res);
+                //判断授权是否过期
+                $flag=$this->isValid($json_data->name);
+                if(!$flag){
+                    header("HTTP/1.0 404 error");
+                    $returnArr['code']=-2;
+                    $returnArr['message']="InvalidAccessToken";
+                    $returnArr['url']=$tokenArr['url'];
+                    return json_encode($returnArr);
+                }
+            }
+            $i++;
+
         }
-        if(!empty($json_data)){
+        if(isset($user_data[0]['_id'])){
             header("HTTP/1.0 200 ok");
             $returnArr['code']=0;
             $returnArr['message']="增加部门成员成功";
-            $returnArr['did']=$did;
+            $returnArr['user']=$user_data;
         }else{
             header("HTTP/1.0 404 error");
             $returnArr['code']=-1;
@@ -449,7 +522,7 @@ class teambition{
     //查找所有部门成员
     public function depart_all_member($did){
         //获取token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -528,6 +601,15 @@ class teambition{
     }
     //修改部门成员 
     public function depart_user_change($src_did,$dst_did,$email){
+        //获取token值
+        $tokenArr=$this->getToken();
+        if($tokenArr['code']==1){
+            header("HTTP/1.0 404 error");
+            $returnArr['code']=-2;
+            $returnArr['message']="InvalidCookie";
+            $returnArr['url']=$tokenArr['url'];
+            return json_encode($returnArr);
+        }
         $userInfo=$this->getUserInfo($email);
         if(empty($userInfo)){
             header("HTTP/1.0 404 error");
@@ -541,6 +623,7 @@ class teambition{
             header("HTTP/1.0 404 error");
             $returnArr['code']=-1;
             $returnArr['message']="修改部门成员失败";
+            $returnArr['res']=$json_arr;
             return json_encode($returnArr);
         }
         if($json_arr['code']==-2){
@@ -553,7 +636,7 @@ class teambition{
         $res=$this->depart_member_add($dst_did,$email);
         $json_arr=json_decode($res,true);
         //判断授权是否过期
-        $flag=$this->isValid($json_data['name']);
+        $flag=$this->isValid($json_arr['name']);
         if(!$flag){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -565,6 +648,7 @@ class teambition{
             header("HTTP/1.0 404 error");
             $returnArr['code']=-1;
             $returnArr['message']="修改部门成员失败";
+            $returnArr['res']=$json_arr;
             return json_encode($returnArr);
         }else{
             header("HTTP/1.0 404 error");
@@ -577,7 +661,7 @@ class teambition{
     //删除部门成员 但是不能删除创建者
     public function depart_member_delete($did,$uid){
         //获取token
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         //判断token是否过期
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
@@ -626,7 +710,7 @@ class teambition{
     }
     //获取当前授权的用户信息
     public function getme(){
-        $tokenArr=$this->getToken($this->app_id);
+        $tokenArr=$this->getToken();
         if($tokenArr['code']==1){
             header("HTTP/1.0 404 error");
             $returnArr['code']=-2;
@@ -673,7 +757,7 @@ class teambition{
         return $result;
     }
      //CURL PUT
-    public function callInterfaceCommon($URL,$type,$params="",$headers){
+    public function callInterfaceCommon($URL,$type,$params="",$headers=""){
         $ch = curl_init($URL);
         $timeout = 5;
         if($headers!=""){

@@ -1,5 +1,4 @@
 <?php 
-session_start();
 //获取appkey appsecret
 $app_key=$_REQUEST['app_key'];
 $app_secret=$_REQUEST['app_secret'];
@@ -28,7 +27,7 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 	switch ($url) {
 	case '/getAccessToken':
 		$obj=new coding($app_key,$app_secret,$redirect_url);
-	 	 echo $obj->getAccessToken($app_key,$getData['code']);
+	 	 echo $obj->getAccessToken($getData['code']);
 	 	 break;
 		//用户添加
 	case '/user/add':
@@ -37,17 +36,18 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 		break;
 		//搜索用户
 	case '/user/get':
-		$obj=new teambition($app_key,$app_secret);
-		return $obj->user_search();
+		$obj=new coding($app_key,$app_secret,$redirect_url);
+		echo $obj->user_search($getData['key']);
 		break;
 		//用户更新
 	case '/user/update':
-		$obj=new teambition($app_key,$app_secret);
-		return $obj->user_update();
+		$obj=new coding($app_key,$app_secret,$redirect_url);
+		$name=$postData['first_name'].$postData['last_name'];
+		echo $obj->user_update($name);
 		break;
 		//用户删除
 	case '/user/delete':
-		$obj=new teambition($app_key,$app_secret);
+		$obj=new coding($app_key,$app_secret);
 		return $obj->user_delete();
 		break;
 		//添加部门
@@ -68,25 +68,21 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
             $returnArr['message']="params error";
             echo json_encode($returnArr);
             die;
-		}
-		//判断数据是否存在
-		if(!dataIsTrue($postData['summary'])){
+		}if(!dataIsTrue($postData['key'])){
 			header("HTTP/1.0 404 error");
             $returnArr['code']=-1;
             $returnArr['message']="params error";
             echo json_encode($returnArr);
             die;
-
 		}
-		$obj=new teambition($app_key,$app_secret,$redirect_url);
-		$res=$obj->depart_add($postData['name'],$postData['summary']);
+		$obj=new coding($app_key,$app_secret,$redirect_url);
+		$res=$obj->depart_add($postData['key'],$postData['name']);
 		echo $res;
 		break;
 		//查找部门
 	case '/depart/get':
 	//对访问类型判断
 	    if($_SERVER['REQUEST_METHOD']!="GET"){
-
 	    	header("HTTP/1.0 404 error");
             $returnArr['code']=-1;
             $returnArr['message']="REQUEST_METHOD is error";
@@ -101,7 +97,7 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
             echo json_encode($returnArr);
             die;
 		}
-		$obj=new teambition($app_key,$app_secret,$redirect_url);
+		$obj=new coding($app_key,$app_secret,$redirect_url);
 		$res=$obj->depart_search($getData['did']);
 		echo $res;
 		break;
@@ -115,15 +111,15 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 	            die;
 		    }
 		    //判断数据是否存在
-		if(!dataIsTrue($postData['did'])){
+        if(!dataIsTrue($postData['id'])){
 			header("HTTP/1.0 404 error");
             $returnArr['code']=-1;
             $returnArr['message']="params error";
             echo json_encode($returnArr);
             die;
 		}
-		$obj=new teambition($app_key,$app_secret,$redirect_url);
-		$res=$obj->depart_update($postData['did'],$postData['name']);
+		$obj=new coding($app_key,$app_secret,$redirect_url);
+		$res=$obj->depart_update($postData['id'],$postData['name'],$postData['description']);
 		echo $res;
 		break;
 	case '/depart/delete':
@@ -136,15 +132,22 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 		            die;
 			    }
 		//判断数据是否存在
-	    if(!dataIsTrue($postData['did'])){
+	    if(!dataIsTrue($postData['key'])){
 				header("HTTP/1.0 404 error");
 	            $returnArr['code']=-1;
 	            $returnArr['message']="params error";
 	            echo json_encode($returnArr);
 	            die;
 			}
-		$obj=new teambition($app_key,$app_secret,$redirect_url);
-		$res=$obj->depart_del($postData['did']);
+        if(!dataIsTrue($postData['name'])){
+            header("HTTP/1.0 404 error");
+            $returnArr['code']=-1;
+            $returnArr['message']="params error";
+            echo json_encode($returnArr);
+            die;
+        }
+		$obj=new coding($app_key,$app_secret,$redirect_url);
+		$res=$obj->depart_del($postData['key'],$postData['name']);
 		echo $res;
 		break;
 		//增加部门成员 
@@ -157,7 +160,7 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 		            echo json_encode($returnArr);
 		            die;
 			    }
-		$obj=new teambition($app_key,$app_secret,$redirect_url);
+		$obj=new coding($app_key,$app_secret,$redirect_url);
 
 		return $obj->user_add();
 		break;
@@ -178,7 +181,7 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 	            echo json_encode($returnArr);
 	            die;
 			}
-		$obj=new teambition($app_key,$app_secret,$redirect_url);
+		$obj=new coding($app_key,$app_secret,$redirect_url);
 		$res=$obj->depart_all_member($postData['did']);
 		echo $res;
 		break;
@@ -215,7 +218,7 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
 	            echo json_encode($returnArr);
 	            die;
 			}
-		$obj=new teambition($app_key,$app_secret,$redirect_url);
+		$obj=new coding($app_key,$app_secret,$redirect_url);
 		$res=$obj->depart_user_change($postData['src_did'],$postData['dst_did'],$postData['uid']);
 		echo  $res;
 		break;
@@ -244,18 +247,18 @@ function changeTo($url,$getData='',$postData='',$app_key,$app_secret,$redirect_u
             echo json_encode($returnArr);
             die;
 		}
-		$obj=new teambition($app_key,$app_secret);
+		$obj=new coding($app_key,$app_secret);
 		$res=$obj->depart_member_delete($postData['did'],$postData['uid']);
 		echo $res;
 		break;
 		//获得组织列表
 	case '/organizations':
-	     $obj=new teambition($app_key,$app_secret,$redirect_url);
+	     $obj=new coding($app_key,$app_secret,$redirect_url);
 	     $res=$obj->getOrganizations();
 	     echo $res;
 	     break;
 	case '/getme':
-	     $obj=new teambition($app_key,$app_secret,$redirect_url);
+	     $obj=new coding($app_key,$app_secret,$redirect_url);
 	     $res=$obj->getme();
 	     echo $res;
 	default:
